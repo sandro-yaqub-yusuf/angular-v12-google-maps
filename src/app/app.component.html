@@ -1,0 +1,72 @@
+<div class="col-md-12 form-group mt-0 mb-0 ml-3 pr-0">
+  <div class="col mapa-left pl-0">
+    <div class="widget-pane-visible mt-1" id="collapseLista">
+      <div class="scrollable">
+        <div id="accordion">
+          <div class="card">
+            <div id="collapseDetalhe" class="collapse show" aria-labelledby="headingDetalhe" data-parent="#accordion">
+              <div class="card card-body itens" *ngFor="let item of detalhe; let i=index;" style="background: #F1F2F7;" [ngClass]="{'card-item-hover': detalhe[i].selecionado}">
+                <div data-toggle="buttons" autofocus tabindex="i" (click)="centerChange(item)" (mouseover)="selecionarItem(item.id)" (mouseenter)="hoverListItem(item)" (mouseleave)="hoverListItem(item)">
+                  <div class="row mb-2">
+                    <div class="col itens-left">
+                      <img src={{item.icon.url}} height="32px" width="32x">
+                    </div>
+                    <div class="col itens-center pl-0 pr-0 pt-2 pb-2 text-left">
+                      <h6 class="detalhe-titulo">{{item.titulo}}</h6>
+                    </div>
+                    <div class="col itens-right pl-0 pr-0 pt-2 pb-2 text-left">
+                      <h6 class="detalhe-hora">{{item.horaTitulo}}</h6>
+                    </div>
+                  </div>
+                  <div class="row ml-2 mr-2">
+                    <div class="detalhe-detalhe">
+                      <div *ngIf="item.detalhe1 !== ''" [innerHTML]="item.detalhe1"><br></div>
+                      <div *ngIf="item.detalhe2 !== ''" [innerHTML]="item.detalhe2"><br></div>
+                      <div *ngIf="item.detalhe3 !== ''" [innerHTML]="item.detalhe3"><br></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col mapa-right">
+    <div class="w-100 p-3 mapa mt-3 align-items-center no-itens" *ngIf="noItens && !loading && !error">
+      <div class="row align-items-center">
+        <div class="col align-self-center text-center">
+          <img src="../assets/magnifying-glass.png" style="width: 150px;" />
+          <p class="pt-3 m-0">Não foram encontrado dados nos filtros selecionados.</p>
+        </div>
+      </div>
+    </div>
+    <div class="row mapa w-100 align-items-center erro alert-error" *ngIf="error">
+      <div class="col-12 align-self-center text-center">
+        <img src="../assets/error.png" style="width: 320px;" />
+      </div>
+    </div>
+    <div class="row mapa pb-3" *ngIf="!error && !noItens && !loading">
+      <div class="col-12 p-0">
+        <google-map width="100%" height="100%" [center]="center" [zoom]="zoom" [options]="options">
+          <map-marker *ngFor="let item of listaDados1" 
+            #markerElem="mapMarker"
+            [position]="item.position"
+            [options]="onMarkerInit(markerElem, item)"
+            (mapClick)="openInfo(markerElem, item.info)"
+            (mapMouseover)="markerMouseOver(markerElem)"
+            (mapMouseout)="markerMouseOut(markerElem)">
+          </map-marker>
+          <map-marker *ngFor="let item of listaDados2" 
+            #markerElem="mapMarker"
+            [position]="item.position"
+            [options]="item"
+            (mapClick)="openInfo(markerElem, item.info)">
+          </map-marker>
+          <map-info-window [innerHTML]="infoContent"></map-info-window>
+        </google-map>
+      </div>
+    </div>
+  </div>      
+</div>
