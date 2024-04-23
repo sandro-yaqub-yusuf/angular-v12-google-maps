@@ -49,7 +49,6 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    console.log('oi');
     this.adicionarLinhasConexao();    
   }
 
