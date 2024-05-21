@@ -28,6 +28,9 @@ export class AppComponent implements OnInit, AfterViewInit {
     disableDoubleClickZoom: true
   };
   public markers: { [id: number]: MapMarker } = {};
+  public paths: google.maps.LatLngLiteral[] = [];
+  public polyline: google.maps.Polyline | null = null;
+  public showPaths = false;
 
   public detalhe: any[] = [];
   public listaDados1: any[] = [];
@@ -49,13 +52,18 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    this.adicionarLinhasConexao();    
+    this.adicionarLinhasConexao();
   }
 
   public centerChange(item: any): void {
     if (item.position.lat && item.position.lng) {
-      this.lat = item.position.lat;
-      this.lng = item.position.lng;
+      navigator.geolocation.getCurrentPosition((position) => {
+        this.lat = position.coords.latitude;
+        this.lng = position.coords.longitude;
+        this.center = { lat: this.lat, lng: this.lng };
+      });
+
+      this.removeLines();
     }
   }
 
@@ -99,19 +107,34 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private adicionarLinhasConexao(): void {
-    for (let i = 0; i < this.listaDados2.length - 1; i++) {
-      const pontoA = this.listaDados2[i].position;
-      const pontoB = this.listaDados2[i + 1].position;
+    const caminho = this.listaDados2.map(item => ({
+      lat: item.position.lat,
+      lng: item.position.lng
+    }));
 
-      new google.maps.Polyline({
-        map: this.mapa?.googleMap,
-        path: [pontoA, pontoB],
-        strokeColor: '#0000FF',
-        strokeOpacity: 0.7,
-        strokeWeight: 3,
-        geodesic: true
-      });
+    this.paths = caminho;
+
+    const polylineOptions: google.maps.PolylineOptions = {
+      path: caminho,
+      strokeColor: 'blue',
+      strokeOpacity: 0.7,
+      strokeWeight: 3
+    };
+
+    if (this.polyline) { this.polyline.setMap(null); }
+
+    this.polyline = new google.maps.Polyline(polylineOptions);
+
+    if (this.mapa) { this.polyline.setMap(this.mapa.googleMap ?? null); }
+  }
+  
+  private removeLines() {
+    if (this.polyline) {
+      this.polyline.setMap(null);
+      this.polyline = null;
     }
+
+    this.paths = [];
   }
 
   private carregarListaDados1(): void {
