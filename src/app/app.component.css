@@ -1,24 +1,46 @@
+button[aria-expanded=true] .fa-chevron-right {
+  display: none;
+}
+
+button[aria-expanded=false] .fa-chevron-left {
+  display: none;
+}
+
 google-map {
-  width: 100% !important;
   height: 100% !important;
 }
 
-.row {
-  height: auto;
+.badge.hidden {
+  display: none;
 }
 
-.alert-error {
-  background-color: #ffffff;
-  border-color: #ff0000;
-  color: #ff0000;
-  font-weight: bold;
-  height: calc(100vh - 400px);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+.badge.active {
+  box-shadow: 0 0 0 0.3rem #6362624d;
+  outline: 0;
+}
+
+.badge.inactive {
+  color: #fff;
+  font-weight: bold !important;
+  opacity: 0.5;
+}
+
+.badge-container {
+  position: absolute;
   top: 0px;
+  right: 0px;
+}
+
+.breadcrumb {
+  padding: 0;
 }
 
 .card-item-hover {
   border: 1px solid #705F0D;
+}
+
+.cursor {
+  padding-top: 13px !important;
 }
 
 .detalhe-titulo {
@@ -43,117 +65,130 @@ google-map {
   flex: 1;
 }
 
-.itens {
+.items {
   padding: 0.25rem;
 }
 
-.itens-left {
+.items-left {
   float: left;
-  width: 19%;
-  max-width: 19%;
+  width: 17%;
+  max-width: 17%;
 }
 
-.itens-center {
+.items-center {
   float: right;
-  width: 58%;
-  max-width: 58%;
+  width: 63%;
+  max-width: 63%;
   height: 15px;
 }
 
-.itens-right {
+.items-right {
   float: right;
-  width: 22%;
-  max-width: 22%;
+  width: 17%;
+  max-width: 17%;
 }
 
-.fs-12 {
-  font-size: 12px !important;
+.linkBtn {
+  cursor: pointer;
 }
 
-.mapa {
+.mapa-google {
   margin: 0px 15px 0px -15px;
-  height: calc(100vh - 700px);
+  height: calc(100vh - 100px);
 }
 
 .mapa-left {
   float: left;
-  width: 350px;
-  max-width: 350px;
+  max-width: 400px;
+  width: 400px;
 }
 
 .mapa-right {
-  width: 100%;
+  float: right;
   max-width: 100%;
+  width: 100%;
+}
+
+.row {
+  height: auto;
 }
 
 .widget-pane-visible {
-  opacity: 1;
-  height: calc(100vh - 30px);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   background: #fff;
+  box-shadow: 0 0 20px #0000004d;
+  cursor: pointer;
+  height: calc(100vh - 100px);
+  opacity: 1;
+  overflow-y: auto;
   top: 0px;
-  z-index: 3;
-  -webkit-transform: translateX(0px);
   transform: translateX(0px);
   transition-property: -webkit-transform,transform,opacity;
   transition-duration: 0.2s;
   transition-timing-function: cubic-bezier(0.0,0.0,0.2,1);
-  overflow-y: auto;
-  cursor: pointer;
+  z-index: 3;
+  -webkit-transform: translateX(0px);
 }
 
 .widget-pane-visible:hover {
-  opacity: 1;
-  height: calc(100vh - 30px);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  background: #fff;
   border: #007bff;
-  background: ffffff;
+  box-shadow: 0 0 20px #0000004d;
+  cursor: pointer;
+  height: calc(100vh - 100px);
+  opacity: 1;
+  overflow-y: auto;
   top: 0px;
-  z-index: 3;
-  -webkit-transform: translateX(0px);
   transform: translateX(0px);
   transition-property: -webkit-transform,transform,opacity;
   transition-duration: 0.2s;
   transition-timing-function: cubic-bezier(0.0,0.0,0.2,1);
-  overflow-y: auto;
-  cursor: pointer;
+  z-index: 3;
+  -webkit-transform: translateX(0px);
 }
 
 .widget-pane-visible::-webkit-scrollbar {
-  width: 6px;
   height: 0px;
+  width: 6px;
 }
 
 .widget-pane-visible::-webkit-scrollbar-thumb {
   background-color: #888;
 }
 
-button[aria-expanded=true] .fa-chevron-right {
-  display: none;
+#card-body-items:hover {
+  border: 1px solid #705F0D;
 }
 
-button[aria-expanded=false] .fa-chevron-left {
-  display: none;
+:host ::ng-deep .badge-blue {
+  background-color:#007bff;
+  border-color: #007bff;
+  color: #fff;
+  font-weight: bold !important;
 }
 
-#dynamic {
-  height: calc(100vh - 30px);
-  box-sizing: border-box;
-}
-
-:host ::ng-deep .detalhe-mapa {
+:host ::ng-deep .mapa-detalhe {
   font-family: Roboto, Arial, sans-serif;
   color: #70757A;
   display: inline-block;
   font-size: 11px;
   line-height: 16px;
-  min-width: 150px;
-  max-width: 250px;
+  max-width: 300px;
+  max-height: 200px;
   -webkit-flex: 1;
   -ms-flex: 1;
   flex: 1;
 }
 
 :host ::ng-deep .map-container {
-  height: calc(100vh - 30px) !important;
+  height: calc(100vh - 100px) !important;
+}
+
+:host ::ng-deep .titulo-detalhe {
+  text-align: center !important;
+  font-size: 12px;
+}
+
+:host ::ng-deep .tooltip {
+  width: 210px;
+  font-size: 10px;
 }

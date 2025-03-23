@@ -1,5 +1,8 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from "@angular/core";
 import { GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
+import { DomSanitizer } from '@angular/platform-browser';
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { HelpModalComponent } from './components/help-modal/help-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -7,18 +10,17 @@ import { GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
   styleUrls: ['./app.component.css']
 })
 
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit {
   @ViewChild(GoogleMap, { static: false }) mapa: (GoogleMap | undefined);
   @ViewChild(MapInfoWindow, { static: false }) infoWindow: (MapInfoWindow | undefined);
 
-  public error = false;
+  public dados1 = true;
+  public dados2 = true;
+  public exibeDetalhes = null;
   public idSelecionado = -1;
   public infoContent = '';
   public lat = 0;
   public lng = 0;
-  public loading = false;
-  public noItens = true;
-  public zoom = 10;
 
   public center: google.maps.LatLngLiteral = { lat: this.lat, lng: this.lng };
   public options: google.maps.MapOptions = {
@@ -28,15 +30,20 @@ export class AppComponent implements OnInit, AfterViewInit {
     disableDoubleClickZoom: true
   };
   public markers: { [id: number]: MapMarker } = {};
-  public paths: google.maps.LatLngLiteral[] = [];
-  public polyline: google.maps.Polyline | null = null;
-  public showPaths = false;
+  public polyline: google.maps.Polyline[] = [];
+  public tamanhoPin = 43;
+  public zoom = 10;
 
   public detalhe: any[] = [];
   public listaDados1: any[] = [];
   public listaDados2: any[] = [];
+  public listaClusterDados1: any[] = [];
+  public listaClusterDados2: any[] = [];
 
-  constructor() { }
+  constructor(
+    private modalService: NgbModal,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     navigator.geolocation.getCurrentPosition((position) => {
@@ -51,11 +58,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.carregarMapa();
   }
 
-  ngAfterViewInit(): void {
-    this.adicionarLinhasConexao();
-  }
-
-  public centerChange(item: any): void {
+  centerChange(item: any): void {
     if (item.position.lat && item.position.lng) {
       navigator.geolocation.getCurrentPosition((position) => {
         this.lat = position.coords.latitude;
@@ -63,42 +66,43 @@ export class AppComponent implements OnInit, AfterViewInit {
         this.center = { lat: this.lat, lng: this.lng };
       });
 
-      this.removeLines();
+      this.mapa?.panTo(item.position);
     }
   }
 
-  public hoverListItem(item: any): void {
-    item.selecionado = !item.selecionado;
-
-    const marker = this.markers[item.id];
-    
-    if (marker) {
-      if (item.selecionado) { this.markerMouseOver(marker); } 
-      else { this.markerMouseOut(marker); }
-    }    
+  getSafeHtml(html: string) {
+    return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
-  public markerMouseOver(marker: MapMarker): void {
+  markerMouseOver(marker: any): void {
     marker.marker?.setAnimation(google.maps.Animation.BOUNCE);
   }
 
-  public markerMouseOut(marker: MapMarker): void {
+  markerMouseOut(marker: any): void {
     marker.marker?.setAnimation(null);
   }
 
-  public openInfo(marker: MapMarker, content: string) {
-    this.infoContent = content;
+  mouseEnterListItem(item: any): void {
+    item.selecionado = true;
 
-    if (this.infoWindow) { this.infoWindow.open(marker); }
-  }
-
-  public onMarkerInit(marker: MapMarker, item: any): any {
-    if (!this.markers[item.id]) { this.markers[item.id] = marker; }
+    if (item.id > 0) {
+      const marker = this.markers[item.id];
     
-    return item;
+      if (marker) { this.markerMouseOver(marker); } 
+    }
   }
 
-  public selecionarItem(id: number): void {
+  mouseLeaveListItem(item: any): void {
+    item.selecionado = false;
+
+    if (item.id > 0) {
+      const marker = this.markers[item.id];
+    
+      if (marker) { this.markerMouseOut(marker); } 
+    }
+  }
+
+  mouseOverSelectItem(id: number): void {
     if (this.idSelecionado !== id) {
       this.idSelecionado = id;
 
@@ -106,49 +110,94 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
   }
 
+  onMarkerInitDados1(marker: MapMarker, item: any): any {
+    if (item.id > 0) { this.markers[item.id] = marker; } 
+    
+    return item;
+  }
+
+  onMarkerInitDados2(marker: MapMarker, item: any): any {
+    if (item.id > 0) { this.markers[item.id] = marker; } 
+    
+    return item;
+  }
+
+  openMarkerInfo(marker: MapMarker, content: string) {
+    this.infoContent = content;
+
+    this.infoWindow?.open(marker);
+  }
+
+  public showHelp(): void {
+    this.modalService.open(HelpModalComponent, { size: 'lg' });
+  }
+
+  public carregarDados1(): void {
+    this.exibeDetalhes = null;
+    this.idSelecionado = -1;
+    this.dados1 = !this.dados1;
+
+    this.carregarMapa();
+  }
+
+  public carregarDados2(): void {
+    this.exibeDetalhes = null;
+    this.idSelecionado = -1;
+    this.dados2 = !this.dados2;
+
+    this.carregarMapa();
+  }
+
   private adicionarLinhasConexao(): void {
-    const caminho = this.listaDados2.map(item => ({
+    const caminho = this.listaClusterDados2.map(item => ({
       lat: item.position.lat,
       lng: item.position.lng
     }));
-
-    this.paths = caminho;
-
-    const polylineOptions: google.maps.PolylineOptions = {
-      path: caminho,
-      strokeColor: 'blue',
-      strokeOpacity: 0.7,
-      strokeWeight: 3
-    };
-
-    if (this.polyline) { this.polyline.setMap(null); }
-
-    this.polyline = new google.maps.Polyline(polylineOptions);
-
-    if (this.mapa) { this.polyline.setMap(this.mapa.googleMap ?? null); }
-  }
   
-  private removeLines() {
-    if (this.polyline) {
-      this.polyline.setMap(null);
-      this.polyline = null;
-    }
+    if (this.polyline) { this.polyline.forEach(polyline => polyline.setMap(null)); }
+  
+    this.polyline = [];
+  
+    for (let i = 0; i < caminho.length - 1; i++) {
+      const coordinates = [caminho[i], caminho[i + 1]];
+  
+      const polyline = new google.maps.Polyline({
+        path: coordinates,
+        strokeColor: '#0a4aca',
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        geodesic: true,
+        icons: [{
+          icon: {
+            path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW, 
+            fillColor: '#0a4aca', 
+            fillOpacity: 1.0,
+            strokeColor: '#0a4aca', 
+            strokeWeight: 2, 
+            strokeOpacity: 1.0, 
+            scale: 3
+          }, 
+          offset: '0%'
+        }]
+      });
+  
+      polyline.setMap(this.mapa?.googleMap ?? null);
 
-    this.paths = [];
+      this.polyline.push(polyline);
+    }
   }
 
   private carregarListaDados1(): void {
-    this.loading = true;
-    this.idSelecionado = -1;
+    const tamanhoImagem = this.tamanhoPin;
 
     this.listaDados1.push({
       id: 1,
       selecionado: false,
       position: { lat: -23.5001, lng: -46.4001 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } },
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 1</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 1</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 1 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 1 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 1 - 3</span></div>
@@ -168,17 +217,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '10:11:01',
       hora: '10:11',
       position: { lat: -23.5001, lng: -46.4001 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
 
     this.listaDados1.push({
       id: 2,
       selecionado: false,
       position: { lat: -23.6001, lng: -46.9001 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } },
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 2</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 2</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 2 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 2 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 2 - 3</span></div>
@@ -198,31 +247,21 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '10:21:02',
       hora: '10:21',
       position: { lat: -23.6001, lng: -46.9001 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
-
-    this.loading = false;
   }
 
   private carregarListaDados2(): void {
-    this.loading = true;
-    this.idSelecionado = -1;
+    const tamanhoImagem = this.tamanhoPin;
 
     this.listaDados2.push({
       id: 3,
       selecionado: false,
       position: { lat: -23.5505, lng: -46.6333 },
-      icon: {
-        url: '../assets/cluster_circle.png',
-        scaledSize: { 'height': 59, 'width': 59 },
-        labelOrigin: { 'x': 30, 'y': 30 },
-        origin: { 'x': 0, 'y': 0 },
-        anchor: { 'x': 11, 'y': 40 }
-      },
-      label: { color: 'black', fontFamily: 'Arial', fontSize: '12px', fontWeight: 'bold', text: '1' },
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem }, labelOrigin: { x: 0, y: 0 }, origin: { x: 0, y: 0 }, anchor: { x: 5, y: 10 } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 3</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 3</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 3 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 3 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 3 - 3</span></div>
@@ -242,24 +281,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '11:31:03',
       hora: '11:31',
       position: { lat: -23.5505, lng: -46.6333 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
 
     this.listaDados2.push({
       id: 4,
       selecionado: false,
       position: { lat: -23.4246, lng: -46.8573 },
-      icon: {
-        url: '../assets/cluster_circle.png',
-        scaledSize: { 'height': 59, 'width': 59 },
-        labelOrigin: { 'x': 30, 'y': 30 },
-        origin: { 'x': 0, 'y': 0 },
-        anchor: { 'x': 11, 'y': 40 }
-      },
-      label: { color: 'black', fontFamily: 'Arial', fontSize: '12px', fontWeight: 'bold', text: '2' },
+      icon: { url: '', scaledSize: { height: tamanhoImagem, width: tamanhoImagem }, labelOrigin: { x: 0, y: 0 }, origin: { x: 0, y: 0 }, anchor: { x: 5, y: 10 } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 4</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 4</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 4 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 4 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 4 - 3</span></div>
@@ -279,24 +311,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '11:41:04',
       hora: '11:41',
       position: { lat: -23.4246, lng: -46.8573 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
 
     this.listaDados2.push({
       id: 5,
       selecionado: false,
       position: { lat: -23.6437, lng: -46.2343 },
-      icon: {
-        url: '../assets/cluster_circle.png',
-        scaledSize: { 'height': 59, 'width': 59 },
-        labelOrigin: { 'x': 30, 'y': 30 },
-        origin: { 'x': 0, 'y': 0 },
-        anchor: { 'x': 11, 'y': 40 }
-      },
-      label: { color: 'black', fontFamily: 'Arial', fontSize: '12px', fontWeight: 'bold', text: '3' },
+      icon: { url: '', scaledSize: { height: tamanhoImagem, width: tamanhoImagem }, labelOrigin: { x: 0, y: 0 }, origin: { x: 0, y: 0 }, anchor: { x: 5, y: 10 } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 5</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 5</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 5 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 5 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 5 - 3</span></div>
@@ -316,24 +341,17 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '11:51:05',
       hora: '11:51',
       position: { lat: -23.6437, lng: -46.2343 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
 
     this.listaDados2.push({
       id: 6,
       selecionado: false,
       position: { lat: -23.7343, lng: -46.5342 },
-      icon: {
-        url: '../assets/cluster_circle.png',
-        scaledSize: { 'height': 59, 'width': 59 },
-        labelOrigin: { 'x': 30, 'y': 30 },
-        origin: { 'x': 0, 'y': 0 },
-        anchor: { 'x': 11, 'y': 40 }
-      },
-      label: { color: 'black', fontFamily: 'Arial', fontSize: '12px', fontWeight: 'bold', text: '4' },
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem }, labelOrigin: { x: 0, y: 0 }, origin: { x: 0, y: 0 }, anchor: { x: 5, y: 10 } },
       info: `<div class="row m-0">
-               <div class="col-12 p-0 text-left detalhe-mapa">
-                 <div class="text-center"><b>ID 6</b><br></div>
+               <div class="col-12 p-0 text-left mapa-detalhe">
+                 <div class="titulo-detalhe"><b>ID 6</b><br></div>
                  <div class="mt-2"><b>Campo: </b>conteúdo do ID 6 - 1</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 6 - 2</span><br></div>
                  <div><b>Campo: </b>conteúdo do ID 6 - 3</span></div>
@@ -353,34 +371,65 @@ export class AppComponent implements OnInit, AfterViewInit {
       horaTitulo: '12:01:06',
       hora: '12:01',
       position: { lat: -23.7343, lng: -46.5342 },
-      icon: { url: '../assets/car_pin.png', scaledSize: { 'height': 40, 'width': 40 } }
+      icon: { url: '../assets/car_pin.png', scaledSize: { height: tamanhoImagem, width: tamanhoImagem } }
     });
-
-    this.loading = false;
   }
 
   private carregarMapa(): void {
-    this.loading = true;
+    const detalheTemp: any[] = [];
 
-    // Ordena a Array
-    const sortedArrayDetalhe: any[] = this.detalhe.sort((obj1, obj2) => {
-      if (obj1.hora > obj2.hora) { return 1; }
-      if (obj1.hora < obj2.hora) { return -1; }
+    let listClusterTemp: any[] = [];
+
+    this.listaClusterDados1 = [];
+    this.listaClusterDados2 = [];
+
+    if (this.dados1) {
+      this.listaDados1.forEach((element) => { listClusterTemp.push(element); });
+
+      const sortedArrayListaDados1: any[] = listClusterTemp.sort((obj1, obj2) => {
+        if (obj1.hora < obj2.hora) { return 1; }
+        if (obj1.hora > obj2.hora) { return -1; }
+  
+        return 0;
+      });
+  
+      this.listaClusterDados1 = sortedArrayListaDados1;
+
+      listClusterTemp = [];
+    }
+
+    if (this.dados2) {
+      this.listaDados2.forEach((element) => { listClusterTemp.push(element); });
+
+      const sortedArrayListaDados2: any[] = listClusterTemp.sort((obj1, obj2) => {
+        if (obj1.hora < obj2.hora) { return 1; }
+        if (obj1.hora > obj2.hora) { return -1; }
+  
+        return 0;
+      });
+  
+      this.listaClusterDados2 = sortedArrayListaDados2;
+
+      listClusterTemp = [];
+    }
+
+    this.detalhe.forEach(function(element) { detalheTemp.push(element); });
+
+    const sortedArrayDetalhe: any[] = detalheTemp.sort((obj1, obj2) => {
+      if (obj1.titulo > obj2.titulo) { return 1; }
+      if (obj1.titulo < obj2.titulo) { return -1; }
 
       return 0;
     });
 
     this.detalhe = sortedArrayDetalhe;
 
-    if (this.listaDados1.length > 0 || this.listaDados2.length > 0) { this.noItens = false; }
-    else { this.noItens = true; }
-
-    this.loading = false;
+    this.adicionarLinhasConexao();
   }
 
   private limparDados(): void {
-    this.loading = false;
     this.idSelecionado = -1;
+
     this.detalhe = [];
     this.listaDados1 = [];
     this.listaDados2 = [];

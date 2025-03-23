@@ -1,0 +1,7 @@
+<div class="modal-header">
+  <h5 class="modal-title">Ajuda</h5>
+  <button type="button" class="close" (click)="closeModal()">&times;</button>
+</div>
+<div class="modal-body">
+  <div [innerHTML]="helpContent | markdown"></div>
+</div>
