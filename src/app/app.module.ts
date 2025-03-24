@@ -2,11 +2,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { GoogleMapsModule } from '@angular/google-maps';
-import { MarkdownModule } from 'ngx-markdown';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { HelpService } from '../services/help.service';
+import { MarkdownModule } from 'ngx-markdown';
 import { AppComponent } from './app.component';
-import { HelpModalComponent } from './components/help-modal/help-modal.component';
 
 @NgModule({
   imports: [
@@ -16,9 +14,8 @@ import { HelpModalComponent } from './components/help-modal/help-modal.component
     NgbModule,
     MarkdownModule.forRoot()
   ],
-  declarations: [AppComponent, HelpModalComponent],
-  bootstrap: [AppComponent],
-  providers: [HelpService]
+  declarations: [AppComponent],
+  bootstrap: [AppComponent]
 })
 
 export class AppModule {}

@@ -1,8 +1,7 @@
-import { Component, OnInit, ViewChild } from "@angular/core";
+import { Component, OnInit, TemplateRef, ViewChild } from "@angular/core";
 import { GoogleMap, MapInfoWindow, MapMarker } from '@angular/google-maps';
 import { DomSanitizer } from '@angular/platform-browser';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { HelpModalComponent } from './components/help-modal/help-modal.component';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +12,7 @@ import { HelpModalComponent } from './components/help-modal/help-modal.component
 export class AppComponent implements OnInit {
   @ViewChild(GoogleMap, { static: false }) mapa: (GoogleMap | undefined);
   @ViewChild(MapInfoWindow, { static: false }) infoWindow: (MapInfoWindow | undefined);
+  @ViewChild('modalHelp') modalHelp: TemplateRef<any> | undefined;
 
   public dados1 = true;
   public dados2 = true;
@@ -68,6 +68,10 @@ export class AppComponent implements OnInit {
 
       this.mapa?.panTo(item.position);
     }
+  }
+
+  closeModal(): void {
+    this.modalService.dismissAll();
   }
 
   getSafeHtml(html: string) {
@@ -129,7 +133,7 @@ export class AppComponent implements OnInit {
   }
 
   public showHelp(): void {
-    this.modalService.open(HelpModalComponent, { size: 'lg' });
+    this.modalService.open( this.modalHelp, { backdrop: 'static', keyboard: false, size: 'lg' } );
   }
 
   public carregarDados1(): void {
